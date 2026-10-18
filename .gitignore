@@ -1,0 +1,6 @@
+# Built add-in (published as a release download instead)
+dist/
+
+# Word lock files and backups
+~$*
+*.bak

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad="TWRibbonLoad">
+  <ribbon>
+    <tabs>
+      <tab id="TypewriterTab" label="Typewriter">
+        <group id="TypewriterGroup" label="Write Forward Only">
+          <toggleButton id="twToggle" size="large" imageMso="Lock"
+              getLabel="TWToggleLabel" getPressed="TWTogglePressed" onAction="TWToggleAction"
+              screentip="Typewriter mode (Ctrl+Alt+T)"
+              supertip="Lock this document so you can only add text at the end. No deleting, cutting, undoing or going back to fix things until the timer runs out." />
+          <separator id="twSep" />
+          <dropDown id="twDuration" label="Session" sizeString="No limit  "
+              getSelectedItemIndex="TWDurationIndex" onAction="TWDurationAction"
+              getEnabled="TWDurationEnabled"
+              screentip="Session length"
+              supertip="How long typewriter mode stays locked on. With No limit you can stop any time.">
+            <item id="m0" label="No limit" />
+            <item id="m5" label="5 min" />
+            <item id="m10" label="10 min" />
+            <item id="m15" label="15 min" />
+            <item id="m20" label="20 min" />
+            <item id="m25" label="25 min" />
+            <item id="m30" label="30 min" />
+            <item id="m45" label="45 min" />
+            <item id="m60" label="60 min" />
+            <item id="m90" label="90 min" />
+          </dropDown>
+          <labelControl id="twTime" getLabel="TWTimeLabel" />
+        </group>
+        <group id="TypewriterCheckGroup" label="Check">
+          <button id="twDiagnostics" label="Diagnostics" size="large" imageMso="Help"
+              onAction="TWDiagnosticsAction"
+              screentip="Typewriter diagnostics"
+              supertip="Checks that Typewriter works on this computer and shows a pass/fail report." />
+          <button id="twUpdates" label="Check for Updates" size="large" imageMso="Refresh"
+              onAction="TWUpdateAction"
+              screentip="Check for updates"
+              supertip="Asks GitHub whether a newer version of Typewriter is available. Nothing is checked unless you click this." />
+        </group>
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>
