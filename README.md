@@ -72,7 +72,11 @@ Quit Word and delete `Typewriter.dotm` from the Startup folder above.
 
 ## Known issues
 
-- **Mac support is beta.** The main features work: blocking, the cursor staying at the end, the timer, and pausing spellcheck. Some keyboard shortcuts may not, including the start shortcut. Use the ribbon button instead. Running **Diagnostics** shows what works on your Mac.
+- **Mac support is beta, and its known problems are all keyboard shortcuts.** Tested on Word 16.114 for Mac, blocking the delete key, keeping the cursor at the end, the session timer and pausing spellcheck all work. Some shortcuts may not work, or may not be blocked:
+  - the start shortcut (Control+Option+T). Use the **Start Writing** button instead.
+  - Option+delete and Cmd+delete, and their fn+delete versions.
+
+  Running **Diagnostics** shows which shortcuts work on your Mac.
 - **The Windows keystroke tests ran on one machine.** Please open an issue with your Diagnostics report if something gets through.
 - **If Word crashes during a session**, AutoCorrect, spellcheck-as-you-type and drag-and-drop stay switched off. Turn them back on in Word's options.
 - **It's a commitment device, not a lock.** You can always close the document, or remove the add-in.
