@@ -1,7 +1,7 @@
 Attribute VB_Name = "Typewriter"
 ' Typewriter: write forward only. Works in Word for Windows and Word for Mac.
 ' Start it from the Typewriter tab on the ribbon, or with Ctrl+Alt+T
-' (Control+Option+T on a Mac).
+' (Windows only; on a Mac use the button).
 ' While it is on you can only add text at the end of the document:
 ' no backspace, delete, cut, undo, replace, overtyping, drag-and-drop,
 ' AutoCorrect, or spelling/grammar fixes. You can still scroll up to reread.
@@ -16,20 +16,14 @@ Private Const LATEST_RELEASE_API As String = _
 Private Const TICK_SECONDS As Long = 1
 Private Const DEFAULT_MINUTES As Long = 25
 
-' Modifier codes. Word for Windows and Word for Mac number them differently
-' (the Mac uses the classic Mac OS values), so each platform has its own key
-' list. The Windows keys are stored in the file when it is built; the Mac keys
-' are added when Word starts on a Mac.
+' Modifier codes as Word for Windows numbers them. The keys are stored in the
+' file when it is built on Windows, and Word for Mac won't let an add-in change
+' them later. Word for Mac reads the same numbers as different keys
+' (256 = Command, 512 = Shift, 1024 = none), so the macros below check which
+' platform they're on.
 Private Const WIN_SHIFT As Long = 256
 Private Const WIN_CTRL As Long = 512
 Private Const WIN_ALT As Long = 1024
-Private Const MAC_CMD As Long = 256
-Private Const MAC_SHIFT As Long = 512
-Private Const MAC_OPT As Long = 2048
-Private Const MAC_CTRL As Long = 4096
-Private Const MAC_FWD_DELETE As Long = 127   ' fn+delete, tried alongside wdKeyDelete
-
-Private macKeyErrors As String
 
 Private twOn As Boolean
 Private twDoc As Document
@@ -66,72 +60,25 @@ Public Sub InstallTypewriter()
         vbInformation, "Typewriter"
 End Sub
 
-' The key list for this platform, shared by the key binding and the
-' diagnostics. Each entry is "key code|macro"; each macro does the
-' platform's normal thing when typewriter mode is off.
+' The keys stored in the file, shared by the key binding and the diagnostics.
+' Each entry is "key code|macro". On a Mac the same codes are:
+'   Backspace          -> delete
+'   Shift+Backspace    -> Cmd+delete
+'   Ctrl+Backspace     -> Shift+delete
+'   Delete             -> fn+delete
+'   Ctrl+Delete        -> Shift+fn+delete
+'   anything with Alt  -> not a key (Word for Mac ignores these)
 Private Function KeyList() As Variant
-    #If Mac Then
-        KeyList = Array( _
-            wdKeyBackspace & "|TypewriterBackspace", _
-            (MAC_SHIFT + wdKeyBackspace) & "|TypewriterBackspace", _
-            (MAC_CMD + wdKeyBackspace) & "|TypewriterCtrlBackspace", _
-            (MAC_OPT + wdKeyBackspace) & "|TypewriterAltBackspace", _
-            wdKeyDelete & "|TypewriterDelete", _
-            MAC_FWD_DELETE & "|TypewriterDelete", _
-            (MAC_SHIFT + wdKeyDelete) & "|TypewriterDelete", _
-            (MAC_CMD + wdKeyDelete) & "|TypewriterCtrlDelete", _
-            (MAC_CMD + MAC_FWD_DELETE) & "|TypewriterCtrlDelete", _
-            (MAC_OPT + wdKeyDelete) & "|TypewriterAltDelete", _
-            (MAC_OPT + MAC_FWD_DELETE) & "|TypewriterAltDelete", _
-            (MAC_CTRL + MAC_OPT + wdKeyT) & "|ToggleTypewriter")
-    #Else
-        KeyList = Array( _
-            wdKeyBackspace & "|TypewriterBackspace", _
-            (WIN_SHIFT + wdKeyBackspace) & "|TypewriterBackspace", _
-            (WIN_CTRL + wdKeyBackspace) & "|TypewriterCtrlBackspace", _
-            (WIN_ALT + wdKeyBackspace) & "|TypewriterAltBackspace", _
-            wdKeyDelete & "|TypewriterDelete", _
-            (WIN_CTRL + wdKeyDelete) & "|TypewriterCtrlDelete", _
-            (WIN_ALT + wdKeyDelete) & "|TypewriterAltDelete", _
-            (WIN_CTRL + WIN_ALT + wdKeyT) & "|ToggleTypewriter")
-    #End If
+    KeyList = Array( _
+        wdKeyBackspace & "|TypewriterBackspace", _
+        (WIN_SHIFT + wdKeyBackspace) & "|TypewriterBackspace", _
+        (WIN_CTRL + wdKeyBackspace) & "|TypewriterCtrlBackspace", _
+        (WIN_ALT + wdKeyBackspace) & "|TypewriterAltBackspace", _
+        wdKeyDelete & "|TypewriterDelete", _
+        (WIN_CTRL + wdKeyDelete) & "|TypewriterCtrlDelete", _
+        (WIN_ALT + wdKeyDelete) & "|TypewriterAltDelete", _
+        (WIN_CTRL + WIN_ALT + wdKeyT) & "|ToggleTypewriter")
 End Function
-
-' On a Mac, adds any Mac shortcut that isn't bound yet. The Windows key codes
-' stored in the file mean different keys there (or none), so these replace
-' them. Runs once per Word session; failures are kept for the diagnostics.
-Private Sub EnsureMacKeys()
-    #If Mac Then
-        Static done As Boolean
-        Dim k As Variant, parts() As String, cmd As String
-        If done Then Exit Sub
-        done = True
-        macKeyErrors = ""
-        On Error Resume Next
-        CustomizationContext = MacroContainer
-        ' Never fall back to changing someone's Normal template
-        If Err.Number <> 0 Or CustomizationContext Is NormalTemplate Then
-            macKeyErrors = "couldn't select Typewriter for key changes: error " & _
-                Err.Number & " (" & Err.Description & ")" & vbCr
-            Exit Sub
-        End If
-        For Each k In KeyList
-            parts = Split(k, "|")
-            cmd = ""
-            cmd = FindKey(CLng(parts(0))).Command
-            If InStr(1, cmd, parts(1), vbTextCompare) = 0 Then
-                Err.Clear
-                KeyBindings.Add KeyCategory:=wdKeyCategoryMacro, Command:=parts(1), _
-                    KeyCode:=CLng(parts(0))
-                If Err.Number <> 0 Then
-                    macKeyErrors = macKeyErrors & "key code " & parts(0) & ": error " & _
-                        Err.Number & " (" & Err.Description & ")" & vbCr
-                End If
-            End If
-        Next k
-        MacroContainer.Saved = True
-    #End If
-End Sub
 
 Private Sub BindKeys()
     Dim k As Variant, parts() As String
@@ -148,7 +95,6 @@ End Sub
 Public Sub AutoExec()
     HookEvents
     LoadPrefs
-    EnsureMacKeys
 End Sub
 
 ' Runs automatically when Word quits.
@@ -364,7 +310,6 @@ Public Sub TWRibbonLoad(ribbon As IRibbonUI)
     Set twRibbon = ribbon
     HookEvents
     LoadPrefs
-    EnsureMacKeys
 End Sub
 
 Public Sub TWToggleAction(control As IRibbonControl, pressed As Boolean)
@@ -518,21 +463,27 @@ Public Function TypewriterDiagnostics() As String
         r = "Typewriter " & TYPEWRITER_VERSION & ", Word " & Application.Version & " on Windows" & vbCr
     #End If
     HookEvents
-    EnsureMacKeys
-    If macKeyErrors <> "" Then r = r & "FAIL  Adding Mac shortcuts: " & macKeyErrors
     r = r & Mark(Not twEvents Is Nothing) & "Word events connected" & vbCr
     r = r & Mark(Not twRibbon Is Nothing) & "Ribbon tab connected" & vbCr
 
     ' Keys: what each one is bound to, as Word names the key on this computer
     For Each k In KeyList
         parts = Split(k, "|")
+        #If Mac Then
+            ' Codes with Alt aren't keys on a Mac (see KeyList)
+            If (CLng(parts(0)) And WIN_ALT) <> 0 Then GoTo NextKey
+        #End If
         stage = "key code " & parts(0) & " (" & parts(1) & ")"
         keyName = stage
         keyName = KeyString(CLng(parts(0))) & " key"
         cmd = ""
         cmd = FindKey(CLng(parts(0))).Command
         r = r & Mark(InStr(1, cmd, parts(1), vbTextCompare) > 0) & keyName & vbCr
+NextKey:
     Next k
+    #If Mac Then
+        r = r & "NOTE  No start shortcut on Mac yet: use the Start Writing button" & vbCr
+    #End If
 
     If twOn Then
         TypewriterDiagnostics = r & "(Skipped the live test: a session is running.)" & vbCr
@@ -677,57 +628,49 @@ End Sub
 
 ' ---------- blocked keys ----------
 ' Bound to keys by BindKeys. When typewriter mode is off each one does what
-' that key normally does on this platform.
+' that key normally does. KeyList shows which key each is on a Mac.
 
-' Backspace / Shift+Backspace (the Mac "delete" key)
+' Windows Backspace and Shift+Backspace. Mac delete and Cmd+delete (Cmd+delete
+' only deletes one character here rather than to the start of the line).
 Public Sub TypewriterBackspace()
     If Locked Then Blocked Else Selection.TypeBackspace
 End Sub
 
-' Windows Ctrl+Backspace: delete previous word. Mac Cmd+delete: delete to line start.
+' Windows Ctrl+Backspace: delete previous word. Mac Shift+delete: delete one character.
 Public Sub TypewriterCtrlBackspace()
     If Locked Then Blocked: Exit Sub
     #If Mac Then
-        If Selection.Type = wdSelectionIP Then Selection.HomeKey Unit:=wdLine, Extend:=wdExtend
-        Selection.Delete
+        Selection.TypeBackspace
     #Else
         Selection.Delete Unit:=wdWord, Count:=-1
     #End If
 End Sub
 
-' Windows Alt+Backspace: undo. Mac Option+delete: delete previous word.
+' Windows Alt+Backspace: undo. (Not a key on a Mac.)
 Public Sub TypewriterAltBackspace()
     If Locked Then Blocked: Exit Sub
-    #If Mac Then
-        Selection.Delete Unit:=wdWord, Count:=-1
-    #Else
-        On Error Resume Next
-        ActiveDocument.Undo
-    #End If
+    On Error Resume Next
+    ActiveDocument.Undo
 End Sub
 
-' Delete (Windows) / fn+delete (Mac)
+' Windows Delete. Mac fn+delete.
 Public Sub TypewriterDelete()
     If Locked Then Blocked Else Selection.Delete
 End Sub
 
-' Windows Ctrl+Delete: delete next word. Mac Cmd+fn+delete: delete to line end.
+' Windows Ctrl+Delete: delete next word. Mac Shift+fn+delete: delete one character.
 Public Sub TypewriterCtrlDelete()
     If Locked Then Blocked: Exit Sub
     #If Mac Then
-        If Selection.Type = wdSelectionIP Then Selection.EndKey Unit:=wdLine, Extend:=wdExtend
         Selection.Delete
     #Else
         Selection.Delete Unit:=wdWord, Count:=1
     #End If
 End Sub
 
-' Mac Option+fn+delete: delete next word. (Alt+Delete does nothing on Windows.)
+' Windows Alt+Delete, which normally does nothing. (Not a key on a Mac.)
 Public Sub TypewriterAltDelete()
-    If Locked Then Blocked: Exit Sub
-    #If Mac Then
-        Selection.Delete Unit:=wdWord, Count:=1
-    #End If
+    If Locked Then Blocked
 End Sub
 
 ' ---------- blocked commands ----------

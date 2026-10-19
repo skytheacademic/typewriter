@@ -58,7 +58,7 @@ On the **Typewriter** tab:
 - **Diagnostics**: checks that everything works on your computer and shows a pass/fail report. Useful for bug reports.
 - **Check for Updates**: asks GitHub whether a newer version exists (Windows; Mac shows the releases link).
 
-Keyboard shortcut: **Ctrl+Alt+T** on Windows. This replaces Word's shortcut for the ™ symbol.
+Keyboard shortcut: **Ctrl+Alt+T** on Windows. This replaces Word's shortcut for the ™ symbol. There's no shortcut on Mac yet.
 
 ## Updating
 
@@ -72,11 +72,12 @@ Quit Word and delete `Typewriter.dotm` from the Startup folder above.
 
 ## Known issues
 
-- **Mac support is beta, and its known problems are all keyboard shortcuts.** Tested on Word 16.114 for Mac, blocking the delete key, keeping the cursor at the end, the session timer and pausing spellcheck all work. Some shortcuts may not work, or may not be blocked:
-  - the start shortcut (Control+Option+T). Use the **Start Writing** button instead.
-  - Option+delete and Cmd+delete, and their fn+delete versions.
+- **Mac support is beta, and its known problems are all keyboard shortcuts.** Tested on Word 16.114 for Mac: blocking delete, Shift+delete, Cmd+delete and fn+delete, keeping the cursor at the end, the session timer and pausing spellcheck all work. Still to fix:
+  - **No start shortcut on Mac.** Word for Mac won't let an add-in set up its own shortcuts, so use the **Start Writing** button.
+  - **Option+delete is untested.** It should be blocked, because it runs Word's own "delete previous word" command, which Typewriter replaces. Please open an issue if it gets through.
+  - **When Typewriter is off,** Cmd+delete deletes one character instead of back to the start of the line.
 
-  Running **Diagnostics** shows which shortcuts work on your Mac.
+  Running **Diagnostics** shows which keys are covered on your Mac.
 - **The Windows keystroke tests ran on one machine.** Please open an issue with your Diagnostics report if something gets through.
 - **If Word crashes during a session**, AutoCorrect, spellcheck-as-you-type and drag-and-drop stay switched off. Turn them back on in Word's options.
 - **It's a commitment device, not a lock.** You can always close the document, or remove the add-in.
